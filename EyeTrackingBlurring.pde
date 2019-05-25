@@ -1,8 +1,8 @@
 import java.io.File;
 
-int blurLevels = 10;
-float clarityBoost = 1.3;
-int maxBlur = 40;
+int blurLevels = 20;
+float clarityBoost = 2.3;
+int maxBlur = 7;
 
 File directoryImages;
 File directoryHeatmaps;
@@ -39,14 +39,23 @@ PImage heatmapBlur(PImage img, PImage heatmap)
   PImage blurs [] = new PImage[blurLevels];
   for (int i = 0; i < blurLevels; ++i)
   {
-    blurs[i] = blur(img, i*(maxBlur/blurLevels));
+    blurs[i] = blur(img, (int)(i*((float)maxBlur/blurLevels)));
     //image(blurs[i], i*500, 0);  
   }
   color[] newImage = heatmap.pixels;
   for (int i = 0; i < newImage.length; ++i)
   {
-    int blurLevel = (blurLevels - 1) - min((int)(clarityBoost * red(newImage[i])) * blurLevels / 255, blurLevels - 1);
-    newImage[i] = blurs[blurLevel].pixels[i];
+    int heatmapBrightness = (int)red(newImage[i]);
+    int blurLevel = (blurLevels - 1) - min((int)(clarityBoost * heatmapBrightness) * (blurLevels) / 255, blurLevels - 1);
+    if (blurLevel == 0)
+    {
+      newImage[i] = blurs[blurLevel].pixels[i];
+    } else
+    {
+      float lerpFactor = (heatmapBrightness % ((float)255 / blurLevels)) / ((float)255 / blurLevels);
+      //println(lerpFactor);
+      newImage[i] = lerpColor(blurs[blurLevel].pixels[i], blurs[blurLevel-1].pixels[i], lerpFactor);
+    }
   }
   PImage result = createImage(img.width, img.height, RGB);
   result.pixels = newImage;
