@@ -27,6 +27,13 @@ class Filterizer:
     def set_color_mode(self, color_mode = 'rgb'):
         self.__color_mode = color_mode
     
+    def set_photo(self, photo):
+        photo = photo.astype(np.ubyte)
+        if (self.__color_mode == None):
+            self.__color_mode = 'RGB'
+        self.__new_image = Image.fromarray(photo, mode=self.__color_mode)
+        self.__image_is_updated = True
+    
     def run_filter(self, filter):
         print(f'Running the filter "{filter.__name__}" and saving the new photos to "{self.__output_directory}"\n...')
         self.__color_mode = None
@@ -35,16 +42,17 @@ class Filterizer:
             photo_filepath = self.__photos_directory + photo_file
             # load current photo and heatmap
             with Image.open(photo_filepath) as image, Image.open(heatmap_filepath) as heatmap_image:
+                self.__image_is_updated = False
+                # Save photo and heatmap to member variables
                 self.__photo_image = image
                 self.__heatmap_array = self.__get_heatmap_array_from_image(heatmap_image)
-                data = filter(self)
-                assert (data is not None), "There's a problem with your filter: \nA filter must always return the modified photo data (as a numpy array). \nMake sure your function ends with something that looks like: \n>>  return photo"
-                data = data.astype(np.ubyte)
-                # convert back to image and display
-                if (self.__color_mode == None):
-                    self.__color_mode = 'RGB'
-                new_photo = Image.fromarray(data, mode=self.__color_mode)
-                new_photo.save(self.__output_directory + photo_file) # save in the output directory, using the image file's original name
+                
+                # Run filter
+                filter(self)
+                
+                # Save modified photo
+                assert (self.__image_is_updated), "There's a problem with your filter: \nMake sure to update the photo by calling set_photo(photo) somewhere in your filter"
+                self.__new_image.save(self.__output_directory + photo_file) # save in the output directory, using the image file's original name
         print("Done")
     
     def __get_heatmap_array_from_image(self, heatmap_image):

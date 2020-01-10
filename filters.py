@@ -32,7 +32,8 @@ def desaturate(filterizer):
     # modify image
     saturation *= heatmap
 
-    return photo
+    # save modified image
+    filterizer.set_photo(photo)
 
 def __lerp(a, b, amount):
     return a * (1 - amount) + b * amount
@@ -46,12 +47,12 @@ def blend_to_gray_linear(filterizer):
     heatmap = filterizer.get_heatmap()
     
     # modify image
-    gray = 255/2
+    gray = 255
     photo[:,:,0] = __lerp(photo[:,:,0], gray, 1 - heatmap)
     photo[:,:,1] = __lerp(photo[:,:,1], gray, 1 - heatmap)
     photo[:,:,2] = __lerp(photo[:,:,2], gray, 1 - heatmap)
     
-    return photo
+    filterizer.set_photo(photo)
 
 def blend_to_gray_quadratic(filterizer):
     # we always have to set the color mode before getting the picture
@@ -68,6 +69,6 @@ def blend_to_gray_quadratic(filterizer):
     photo[:,:,1] = __lerp(photo[:,:,1], gray, blend_factor)
     photo[:,:,2] = __lerp(photo[:,:,2], gray, blend_factor)
     
-    return photo
+    filterizer.set_photo(photo)
 
 f.run_filter(blend_to_gray_linear)
