@@ -27,7 +27,7 @@ heatmap = cv2.imread(hmPath, cv2.IMREAD_GRAYSCALE).astype("float32") * NORMALIZE
 model.set_input_image(image)
 model.set_input_heatmap(heatmap)
 # model.apply_filters([filters.fade_to_color.FadeToColor()])
-model.apply_filters([filters.accurate_blur.AccurateBlur()])
+model.apply_filters([filters.fade_to_color.FadeToColor()])
 
 # display
 cv2.imshow("filtered", model.get_output_image())
