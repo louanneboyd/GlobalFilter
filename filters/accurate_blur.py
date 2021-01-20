@@ -5,6 +5,8 @@ from filters.helpers.attributes import *
 
 class AccurateBlur:
 
+    name = "Blur (Accurate)"
+
     attributes = {
         'kernel size' : Attribute (
             name = 'Blur Amount / Gaussian Kernel Width (pixels)',

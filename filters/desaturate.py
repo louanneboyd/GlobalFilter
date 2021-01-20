@@ -3,6 +3,8 @@ import numpy as np
 
 class Desaturate:
 
+    name = "Desaturate"
+
     attributes = {}
 
     def run(self, image, heatmap):

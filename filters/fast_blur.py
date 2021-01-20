@@ -4,6 +4,8 @@ from filters.helpers.attributes import *
 
 class FastBlur:
 
+    name = "Blur (Fast)"
+
     attributes = {
         'kernel size' : Attribute (
             name = 'Blur Amount / Gaussian Kernel Width (pixels)',

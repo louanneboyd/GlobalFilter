@@ -4,6 +4,8 @@ from filters.helpers.attributes import *
 
 class FadeToColor:
 
+    name = "Fade To Color"
+
     attributes = {
         'color' : Attribute (
             name = 'Color',
