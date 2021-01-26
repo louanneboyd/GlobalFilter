@@ -23,6 +23,10 @@ active_filters = []
 image_filenames = []
 heatmap_filenames = []
 
+input_image_frame = None
+input_heatmap_frame = None
+output_frame = None
+
 def make_image_label(gui_parent, image):
     image = ImageTk.PhotoImage(Image.fromarray(image)) # convert to tk's image format
     label = Label(gui_parent, image=image)
@@ -70,6 +74,8 @@ def load_images():
     global image_filenames
     # show an file dialog box and return the path to the selected file
     image_filenames = filedialog.askopenfilenames(initialdir = ".", title = "Select the input images")
+    input_image_frame.winfo_children()[0].destroy() # delete old image preview
+    make_image_label(input_image_frame, cv2.imread(image_filenames[0])) # set new image preview
 
 def load_heatmaps():
     global heatmap_filenames
@@ -101,21 +107,22 @@ def main():
 
     ################ top row (image previews) ################
     Label(top, text="Images").grid(row=0, column=0, sticky=W)
-    image_frame = Frame(top, highlightbackground="black", highlightthickness="1px")
-    image_frame.grid(row=1, column=0)
-    make_image_label(image_frame, image).pack(side=LEFT, padx=10, pady=10)
+    global input_image_frame
+    input_image_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
+    input_image_frame.grid(row=1, column=0)
+    make_image_label(input_image_frame, image).pack(side=LEFT, padx=10, pady=10)
     Button(top, text="Load", command=load_images).grid(row=2, column=0, sticky=W)
 
     Label(top, text="Heatmaps").grid(row=0, column=1, sticky=W)
-    image_frame = Frame(top, highlightbackground="black", highlightthickness="1px")
-    image_frame.grid(row=1, column=1)
-    make_image_label(image_frame, image).pack(side=LEFT, padx=10, pady=10)
+    input_heatmap_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
+    input_heatmap_frame.grid(row=1, column=1)
+    make_image_label(input_heatmap_frame, image).pack(side=LEFT, padx=10, pady=10)
     Button(top, text="Load", command=load_heatmaps).grid(row=2, column=1, sticky=W)
 
     Label(top, text="Result (Preview)").grid(row=0, column=3, sticky=W)
-    image_frame = Frame(top, highlightbackground="black", highlightthickness="1px")
-    image_frame.grid(row=1, column=3)
-    make_image_label(image_frame, image).pack(side=LEFT, padx=10, pady=10)
+    output_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
+    output_frame.grid(row=1, column=3)
+    make_image_label(output_frame, image).pack(side=LEFT, padx=10, pady=10)
     Button(top, text="Choose Save Location...").grid(row=2, column=3, sticky=W)
 
     ################ bottom row (filter & heatmap options) ################
@@ -123,7 +130,7 @@ def main():
     ##################
     ### available filters
     Label(bottom, text="Available Filters").grid(row=0, column=0, sticky=W)
-    frame = Frame(bottom, highlightbackground="black", highlightthickness="1px")
+    frame = Frame(bottom, highlightbackground="black", highlightthickness="1p")
     frame.grid(row=1, column=0)
     for i, filter in enumerate(available_filters):
         Radiobutton(frame, text=filter.name, value=i, variable=selected_filter_from_available, indicator = 0, anchor=W).pack(side=BOTTOM, fill=X)
@@ -131,7 +138,7 @@ def main():
     ##################
     ### active filters
     Label(bottom, text="Selected Filters").grid(row=0, column=2, sticky=W)
-    active_filters_frame = Frame(bottom, highlightbackground="black", highlightthickness="1px")
+    active_filters_frame = Frame(bottom, highlightbackground="black", highlightthickness="1p")
     active_filters_frame.grid(row=1, column=2)
 
     ##################
@@ -146,13 +153,13 @@ def main():
     ##################
     ### settings for the selected active filter
     Label(bottom, text="Filter Settings").grid(row=0, column=3, sticky=W)
-    # frame = Frame(bottom, highlightbackground="black", highlightthickness="1px")
+    # frame = Frame(bottom, highlightbackground="black", highlightthickness="1p")
     # frame.grid(row=1, column=3)
 
     ##################
     ### heatmap adjustments
     Label(bottom, text="Heatmap Adjustments").grid(row=0, column=4, sticky=W)
-    frame = Frame(bottom, highlightbackground="black", highlightthickness="1px")
+    frame = Frame(bottom, highlightbackground="black", highlightthickness="1p")
     frame.grid(row=1, column=4)
     Label(frame, text="Clamp").grid(row=0, column=0)
     Checkbutton(frame).grid(row=0, column=1)

@@ -23,8 +23,8 @@ def test_images_from_explorer(filters):
 
 def test_single_image(filters):
     # test image and heatmap paths
-    imPath = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\images\04.jpg'
-    hmPath = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\heatmaps\n04.jpg'
+    imPath = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\images\13.jpg'
+    hmPath = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\heatmaps\n13.jpg'
 
     test_run(imPath, hmPath, filters)
 
@@ -52,11 +52,11 @@ def test_run(image_path, heatmap_path, filters):
 filters_to_run = [
     # filters.fade_to_color.FadeToColor(),
     # filters.desaturate.Desaturate(),
-    # filters.fast_blur.FastBlur(),
-    filters.accurate_blur.AccurateBlur(),
+    filters.fast_blur.FastBlur(),
+    # filters.accurate_blur.AccurateBlur(),
     ]
 
-test_images_from_explorer(filters_to_run)
-# test_single_image(filters_to_run)
+# test_images_from_explorer(filters_to_run)
+test_single_image(filters_to_run)
 
 cv2.destroyAllWindows()
