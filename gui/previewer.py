@@ -85,21 +85,23 @@ class GUI_TabbedImagePreviewer(ttk.Notebook):
         self.max_width = max_width
         self.max_height = max_height
         self.tabs = []
-        tab1 = ttk.Frame(self)
-        tab2 = ttk.Frame(self)
-        self.add(tab1, text="All Records")
-        self.add(tab2, text="Add New Record")
+        # tab1 = ttk.Frame(self)
+        # tab2 = ttk.Frame(self)
+        # self.add(tab1, text="All Records")
+        # self.add(tab2, text="Add New Record")
         self.pack(expand=1, fill='both')
 
-    def add_single_image(image_sources, data_type):
+    def add_multi_image(self, tab_name, image_sources, data_type):
         f = ttk.Frame(self)
         self.tabs.append(f)
-        GUI_MultiImagePreviewer(f, image_sources, data_type)
+        self.add(f, text=tab_name)
+        GUI_MultiImagePreviewer(f, image_sources, data_type, max_width=self.max_width, max_height=self.max_height).pack()
 
-    def add_multi_image(image_source, data_type):
+    def add_single_image(self, tab_name, image_source, data_type):
         f = ttk.Frame(self)
         self.tabs.append(f)
-        GUI_SingleImagePreviewer(f, image_source, data_type)
+        self.add(f, text=tab_name)
+        GUI_SingleImagePreviewer(f, image_source, data_type, max_width=self.max_width, max_height=self.max_height).pack()
 
 if __name__ == "__main__":
     root = Tk()
@@ -109,11 +111,13 @@ if __name__ == "__main__":
     path3 = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\images\06.jpg'
     cv2_image = cv2.imread(path)
 
-    GUI_TabbedImagePreviewer(root).pack()
+    tabs = GUI_TabbedImagePreviewer(root, max_width="4i", max_height="4i")
+    tabs.pack()
+    tabs.add_single_image("One lonely image", path, ImageSource.FILEPATH)
+    tabs.add_multi_image("Oh wow, two images!", [path2, path3], ImageSource.FILEPATH)
 
     # GUI_MultiImagePreviewer(root, [path, path2, path3], data_type = ImageSource.FILEPATH, max_width="4i", max_height="4i").pack()
 
     # GUI_SingleImagePreviewer(root, cv2_image, data_type = ImageSource.ARRAY, max_width="2i", max_height="2i").pack()
     # GUI_SingleImagePreviewer(root, image_source=path, data_type=ImageSource.FILEPATH, max_width="1i", max_height="1i").pack()
-    # GUI_SingleImagePreviewer(root).pack()
     root.mainloop()
