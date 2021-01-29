@@ -8,6 +8,7 @@ from PIL import Image, ImageTk
 def image_from_array(root, cv_image, max_width, max_height):
     # path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\images\04.jpg'
     # image = cv2.imread(path)
+    cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB) # convert colorspace from BGR to RGB
     pil_image = Image.fromarray(cv_image)
     resize_pil_image(root, pil_image, max_width, max_height)
     tk_image = ImageTk.PhotoImage(pil_image)

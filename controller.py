@@ -32,9 +32,11 @@ input_image_frame = None
 input_heatmap_frame = None
 output_frame = None
 
-preview_image_index = 0
+preview_index = 0
 preview_heatmap = None
 heatmap_remapping_data = {}
+
+NORMALIZED = 1./255
 
 def make_image_label(gui_parent, image):
     image = ImageTk.PhotoImage(Image.fromarray(image)) # convert to tk's image format
@@ -47,9 +49,16 @@ def add_filter(frame):
     global active_filters
     active_filters.append( selected() )
     Radiobutton(frame, text=selected.name, value=len(active_filters) - 1, variable=selected_filter_from_active, indicator = 0, anchor=W).pack(side=BOTTOM, fill=X)
+    update_previews()
 
 # @TODO make remove_filter remove just one filter, rather than all filters
 def remove_filter(frame):
+    global active_filters
+    active_filters = []
+    for child in frame.winfo_children():
+        child.destroy()
+
+def remove_all_filters(frame):
     global active_filters
     active_filters = []
     for child in frame.winfo_children():
@@ -63,7 +72,6 @@ def update_heatmap(data):
         preview_heatmap = model.remapped_heatmap
 
 def run(image_path, heatmap_path, filters):
-    NORMALIZED = 1./255
 
     # read image
     image = cv2.imread(image_path)
@@ -74,30 +82,45 @@ def run(image_path, heatmap_path, filters):
     model.set_input_heatmap(heatmap)
     model.apply_filters(filters)
 
-    # display
-    cv2.imshow("filtered", model.get_output_image())
-
-    # wait for user
-    cv2.waitKey(0)
-
 def run_all():
     print(len(image_filenames))
     for i in range(len(image_filenames)):
         print(i)
         run(image_filenames[i], heatmap_filenames[i], active_filters)
+        # display
+        cv2.imshow("filtered", model.get_output_image())
+
+        # wait for user
+        cv2.waitKey(0)
+
+def update_previews():
+    # update preview of the input images
+    if (image_filenames is not None and preview_index < len(image_filenames)):
+        preview_input_image.set(image_filenames[preview_index], ImageSource.FILEPATH)
+
+    # update preview of the input heatmaps
+    if (heatmap_filenames is not None and preview_index < len(heatmap_filenames)):
+        preview_heatmap.set(heatmap_filenames[preview_index], ImageSource.FILEPATH)
+
+    # update preview of the output images
+    if (len(image_filenames) > preview_index and len(heatmap_filenames) > preview_index):
+        run(image_filenames[preview_index], heatmap_filenames[preview_index], active_filters)
+        preview_output.set(model.get_output_image(), ImageSource.ARRAY)
 
 def load_images():
     global image_filenames
-    global preview_image_index
-    preview_image_index = 0
+    global preview_index
+    preview_index = 0
     # show an file dialog box and return the path to the selected file
-    image_filenames = filedialog.askopenfilenames(initialdir = ".", title = "Select the input images")
-    preview_input_image.set(image_filenames, ImageSource.FILEPATH)
+    image_filenames = filedialog.askopenfilenames(title = "Select the input images")
+    update_previews()
+
 
 def load_heatmaps():
     global heatmap_filenames
     # show an file dialog box and return the path to the selected file
     heatmap_filenames = filedialog.askopenfilenames(title = "Select the input heatmaps")
+    update_previews()
 
 def main():
     # hidpi support on windows
@@ -111,6 +134,7 @@ def main():
     image = cv2.imread(path)
 
     gui = Tk()
+    gui.winfo_toplevel().title("Global Filter")
 
     top = Frame(gui)
     bottom = Frame(gui)
@@ -130,7 +154,7 @@ def main():
     input_image_frame.grid(row=1, column=0)
     image_size = "2i"
     global preview_input_image
-    preview_input_image = GUI_MultiImagePreviewer(input_image_frame, [path], data_type = ImageSource.FILEPATH, max_width=image_size, max_height=image_size)
+    preview_input_image = GUI_SingleImagePreviewer(input_image_frame, path, data_type = ImageSource.FILEPATH, max_width=image_size, max_height=image_size)
     preview_input_image.pack(side=LEFT, padx=10, pady=10)
     # GUI_SingleImagePreviewer(input_image_frame, image_source=path, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size).pack(side=LEFT, padx=10, pady=10)
     Button(top, text="Load", command=load_images).grid(row=2, column=0, sticky=W)
@@ -138,13 +162,17 @@ def main():
     Label(top, text="Heatmaps").grid(row=0, column=1, sticky=W)
     input_heatmap_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
     input_heatmap_frame.grid(row=1, column=1)
-    GUI_SingleImagePreviewer(input_heatmap_frame, image_source=hmpath, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size).pack(side=LEFT, padx=10, pady=10)
+    global preview_heatmap
+    preview_heatmap = GUI_SingleImagePreviewer(input_heatmap_frame, image_source=hmpath, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size)
+    preview_heatmap.pack(side=LEFT, padx=10, pady=10)
     Button(top, text="Load", command=load_heatmaps).grid(row=2, column=1, sticky=W)
 
     Label(top, text="Result (Preview)").grid(row=0, column=3, sticky=W)
     output_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
     output_frame.grid(row=1, column=3)
-    GUI_SingleImagePreviewer(output_frame, image_source=path, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size).pack(side=LEFT, padx=10, pady=10)
+    global preview_output
+    preview_output = GUI_SingleImagePreviewer(output_frame, image_source=path, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size)
+    preview_output.pack(side=LEFT, padx=10, pady=10)
     Button(top, text="Choose Save Location...").grid(row=2, column=3, sticky=W)
 
     ################ bottom row (filter & heatmap options) ################
@@ -169,6 +197,7 @@ def main():
     frame.grid(row=1, column=1)
     Button(frame, text="Add", command = lambda: add_filter(active_filters_frame)).pack(fill=X)
     Button(frame, text="Remove", command = lambda: remove_filter(active_filters_frame)).pack(fill=X)
+    Button(frame, text="Remove  All", command = lambda: remove_all_filters(active_filters_frame)).pack(fill=X)
     Button(frame, text="▲").pack(fill=X)
     Button(frame, text="▼").pack(fill=X)
 
