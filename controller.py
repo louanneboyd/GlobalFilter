@@ -11,6 +11,11 @@ import filters.fast_blur
 import filters.accurate_blur
 import model
 
+from gui import GUI_SingleImagePreviewer
+from gui import GUI_MultiImagePreviewer
+from gui import GUI_HeatmapAdjustments
+from gui import ImageSource
+
 available_filters = [
     filters.accurate_blur.AccurateBlur,
     filters.fast_blur.FastBlur,
@@ -26,6 +31,10 @@ heatmap_filenames = []
 input_image_frame = None
 input_heatmap_frame = None
 output_frame = None
+
+preview_image_index = 0
+preview_heatmap = None
+heatmap_remapping_data = {}
 
 def make_image_label(gui_parent, image):
     image = ImageTk.PhotoImage(Image.fromarray(image)) # convert to tk's image format
@@ -45,6 +54,13 @@ def remove_filter(frame):
     active_filters = []
     for child in frame.winfo_children():
         child.destroy()
+
+def update_heatmap(data):
+    global preview_heatmap
+    global heatmap_remapping_data
+    if (preview_heatmap is not None):
+        model.remap_heatmap(data)
+        preview_heatmap = model.remapped_heatmap
 
 def run(image_path, heatmap_path, filters):
     NORMALIZED = 1./255
@@ -72,10 +88,11 @@ def run_all():
 
 def load_images():
     global image_filenames
+    global preview_image_index
+    preview_image_index = 0
     # show an file dialog box and return the path to the selected file
     image_filenames = filedialog.askopenfilenames(initialdir = ".", title = "Select the input images")
-    input_image_frame.winfo_children()[0].destroy() # delete old image preview
-    make_image_label(input_image_frame, cv2.imread(image_filenames[0])) # set new image preview
+    preview_input_image.set(image_filenames, ImageSource.FILEPATH)
 
 def load_heatmaps():
     global heatmap_filenames
@@ -90,6 +107,7 @@ def main():
 
     # Test image
     path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\images\04.jpg'
+    hmpath = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\heatmaps\n04.jpg'
     image = cv2.imread(path)
 
     gui = Tk()
@@ -110,19 +128,23 @@ def main():
     global input_image_frame
     input_image_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
     input_image_frame.grid(row=1, column=0)
-    make_image_label(input_image_frame, image).pack(side=LEFT, padx=10, pady=10)
+    image_size = "2i"
+    global preview_input_image
+    preview_input_image = GUI_MultiImagePreviewer(input_image_frame, [path], data_type = ImageSource.FILEPATH, max_width=image_size, max_height=image_size)
+    preview_input_image.pack(side=LEFT, padx=10, pady=10)
+    # GUI_SingleImagePreviewer(input_image_frame, image_source=path, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size).pack(side=LEFT, padx=10, pady=10)
     Button(top, text="Load", command=load_images).grid(row=2, column=0, sticky=W)
 
     Label(top, text="Heatmaps").grid(row=0, column=1, sticky=W)
     input_heatmap_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
     input_heatmap_frame.grid(row=1, column=1)
-    make_image_label(input_heatmap_frame, image).pack(side=LEFT, padx=10, pady=10)
+    GUI_SingleImagePreviewer(input_heatmap_frame, image_source=hmpath, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size).pack(side=LEFT, padx=10, pady=10)
     Button(top, text="Load", command=load_heatmaps).grid(row=2, column=1, sticky=W)
 
     Label(top, text="Result (Preview)").grid(row=0, column=3, sticky=W)
     output_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
     output_frame.grid(row=1, column=3)
-    make_image_label(output_frame, image).pack(side=LEFT, padx=10, pady=10)
+    GUI_SingleImagePreviewer(output_frame, image_source=path, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size).pack(side=LEFT, padx=10, pady=10)
     Button(top, text="Choose Save Location...").grid(row=2, column=3, sticky=W)
 
     ################ bottom row (filter & heatmap options) ################
@@ -161,16 +183,11 @@ def main():
     Label(bottom, text="Heatmap Adjustments").grid(row=0, column=4, sticky=W)
     frame = Frame(bottom, highlightbackground="black", highlightthickness="1p")
     frame.grid(row=1, column=4)
-    Label(frame, text="Clamp").grid(row=0, column=0)
-    Checkbutton(frame).grid(row=0, column=1)
-    Label(frame, text="Curve", anchor=W).grid(row=1, column=0)
-    Label(frame, text="Minimum", anchor=W).grid(row=2, column=0)
-    Label(frame, text="Maximum", anchor=W).grid(row=3, column=0)
+    GUI_HeatmapAdjustments(frame, update_heatmap).pack()
 
     ##################
     ### run
     Button(bottom, text="▶ Run", bg="green", command=run_all).grid(row=0, column=5, sticky=W)
-
 
     gui.mainloop()
 
