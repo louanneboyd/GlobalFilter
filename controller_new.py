@@ -1,4 +1,5 @@
 from tkinter import filedialog
+from available_filters import available_filters
 
 
 image_filenames = []

@@ -6,11 +6,6 @@ import controller_new as controller
 import model
 from gui import SingleImagePreviewer, TabbedImagePreviewer, ImageSource, HeatmapAdjustments
 
-from filters import *
-# from filters import AccurateBlur, ClassicBlur, Desaturate, FadeToColor, FastBlur
-
-# from gui import HeatmapAdjustments
-
 blank_image_path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\gui\blank.bmp'
 
 def main():
@@ -88,10 +83,10 @@ class SaveLoadAndPreviews(ttk.Frame):
         self.image_result.grid(row=2, column=2, sticky=tk.W)
 
 
-        button_load_image = ttk.Button(self, text="Load", command=controller.on_button_pressed_load_image)
+        button_load_image = ttk.Button(self, text="Load Images", command=controller.on_button_pressed_load_image)
         button_load_image.grid(row=3, column=0, sticky=tk.W)
 
-        button_load_heatmap = ttk.Button(self, text="Load", command=controller.on_button_pressed_load_heatmap)
+        button_load_heatmap = ttk.Button(self, text="Load Heatmaps", command=controller.on_button_pressed_load_heatmap)
         button_load_heatmap.grid(row=3, column=1, sticky=tk.W)
 
         button_choose_save_location = ttk.Button(self, text="Choose Save Location", command=controller.on_button_pressed_choose_save_location)
@@ -125,6 +120,9 @@ class FiltersAndSettings(ttk.Frame):
 class AvailableFilters(ttk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+        self.selected_filter_from_available = tk.IntVar()
+        for i, filter in enumerate(controller.available_filters):
+            tk.Radiobutton(self, text=filter.name, value=i, variable=self.selected_filter_from_available, indicator = 0, anchor=tk.W).pack(side=tk.BOTTOM, fill=tk.X)
 
 class SwapFilters(ttk.Frame):
     def __init__(self, parent):
