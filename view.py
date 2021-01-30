@@ -1,13 +1,14 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 import platform
+import cv2
 
 import controller_new as controller
 import model
 from gui import SingleImagePreviewer, TabbedImagePreviewer, ImageSource, HeatmapAdjustments
 
 blank_image_path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\gui\blank.bmp'
-refresh_settings_observers = [] # (observer design pattern) a list of the functions to call whenever refresh_settings() is called
+observers_to_refresh = [] # (observer design pattern) a list of the functions to call whenever refresh_settings() is called
 
 def main():
     # hidpi support on windows
@@ -35,6 +36,9 @@ class View(ttk.Frame):
         self.settings = FiltersAndSettings(self)
         self.settings.pack()
 
+        # reload preview images whenever view.refresh is called
+        observers_to_refresh.append(lambda: self.preview_image(0))
+
     def get_selected_filter_index_from_available(self):
         return self.settings.available.selected_filter_from_available.get()
 
@@ -46,6 +50,7 @@ class View(ttk.Frame):
             self.__set_preview_input(controller.image_filenames[index])
         if index < len(controller.heatmap_filenames):
             self.__set_preview_heatmap(controller.heatmap_filenames[index])
+            self.__update_preview_modified_heatmap(controller.heatmap_filenames[index])
         if index < len(controller.image_filenames) and index < len(controller.heatmap_filenames):
             self.__set_preview_result(controller.image_filenames[index], controller.heatmap_filenames[index])
 
@@ -55,20 +60,18 @@ class View(ttk.Frame):
     def __set_preview_heatmap(self, filename):
         self.previews.image_heatmap.set(filename, ImageSource.FILEPATH)
 
-    def __update_preview_modified_heatmap():
-        pass
-        # heatmap_path = controller.heatmap_filenames[controller.preview_index]
-        # heatmap = cv2.imread(heatmap_path, cv2.IMREAD_GRAYSCALE).astype("float32") * NORMALIZED
-        # model.set_input_heatmap(heatmap)
-        # heatmap = (model.get_remapped_heatmap() / NORMALIZED).astype("uint8")
-        # preview_heatmap.tabs[1].winfo_children()[0].set(heatmap, ImageSource.ARRAY)
+    def __update_preview_modified_heatmap(self, filename):
+        heatmap = cv2.imread(filename, cv2.IMREAD_GRAYSCALE).astype("float32") * model.NORMALIZED
+        model.set_input_heatmap(heatmap)
+        heatmap = (model.get_remapped_heatmap() / model.NORMALIZED).astype("uint8")
+        self.previews.image_heatmap_adjusted.set(heatmap, ImageSource.ARRAY)
 
     def __set_preview_result(self, image, heatmap):
         model.run(image, heatmap, controller.active_filters)
         self.previews.image_result.set(model.get_output_image(), ImageSource.ARRAY)
 
-    def refresh_settings(self):
-        for func in refresh_settings_observers:
+    def refresh(self):
+        for func in observers_to_refresh:
             func()
 
 class SaveLoadAndPreviews(ttk.Frame):
@@ -76,9 +79,10 @@ class SaveLoadAndPreviews(ttk.Frame):
         tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
         ttk.Label(self, text="Preview").grid(row=0, column=0, sticky=tk.W)
 
-        ttk.Label(self, text="Images").grid(row=1, column=0, sticky=tk.W)
-        ttk.Label(self, text="Heatmaps").grid(row=1, column=1, sticky=tk.W)
-        ttk.Label(self, text="Result").grid(row=1, column=2, sticky=tk.W)
+        ttk.Label(self, text="Images   ").grid(row=1, column=0, sticky=tk.W)
+        ttk.Label(self, text="Heatmaps (original)   ").grid(row=1, column=1, sticky=tk.W)
+        ttk.Label(self, text="(adjusted)   ").grid(row=1, column=2, sticky=tk.W)
+        ttk.Label(self, text="Result").grid(row=1, column=3, sticky=tk.W)
 
         max_size = "2i" # 2 inches
 
@@ -89,8 +93,11 @@ class SaveLoadAndPreviews(ttk.Frame):
         self.image_heatmap = SingleImagePreviewer(self, image_source=blank_image_path, source=ImageSource.FILEPATH, max_width=max_size, max_height=max_size)
         self.image_heatmap.grid(row=2, column=1, sticky=tk.W)
 
+        self.image_heatmap_adjusted = SingleImagePreviewer(self, image_source=blank_image_path, source=ImageSource.FILEPATH, max_width=max_size, max_height=max_size)
+        self.image_heatmap_adjusted.grid(row=2, column=2, sticky=tk.W)
+
         self.image_result = SingleImagePreviewer(self, image_source=blank_image_path, source=ImageSource.FILEPATH, max_width=max_size, max_height=max_size)
-        self.image_result.grid(row=2, column=2, sticky=tk.W)
+        self.image_result.grid(row=2, column=3, sticky=tk.W)
 
 
         button_load_image = ttk.Button(self, text="Load Images", command=controller.on_button_pressed_load_image)
@@ -100,9 +107,7 @@ class SaveLoadAndPreviews(ttk.Frame):
         button_load_heatmap.grid(row=3, column=1, sticky=tk.W)
 
         button_choose_save_location = ttk.Button(self, text="Choose Save Location", command=controller.on_button_pressed_choose_save_location)
-        button_choose_save_location.grid(row=3, column=2, sticky=tk.W)
-
-        # Previews(self).pack()
+        button_choose_save_location.grid(row=3, column=3, sticky=tk.W)
 
 class Previews(ttk.Frame):
     def __init__(self, parent):
@@ -117,7 +122,7 @@ class FiltersAndSettings(ttk.Frame):
         tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
         # ttk.Label(self, text="Filters").grid(row=0, column=0)
         ttk.Label(self, text="Available Filters   ").grid(row=1, column=0, sticky=tk.W)
-        ttk.Label(self, text="Selected Filters   ").grid(row=1, column=2, sticky=tk.W)
+        ttk.Label(self, text="Active Filters   ").grid(row=1, column=2, sticky=tk.W)
         ttk.Label(self, text="Filter Settings   ").grid(row=1, column=3, sticky=tk.W)
         ttk.Label(self, text="Heatmap Adjustments").grid(row=1, column=4, sticky=tk.W)
 
@@ -149,7 +154,7 @@ class ActiveFilters(ttk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
         self.selected_filter_from_active = tk.IntVar()
-        refresh_settings_observers.append(self.refresh)
+        observers_to_refresh.append(self.refresh)
 
     def refresh(self): # make sure that the visible list of active filters is up to date
         for child in self.winfo_children():
