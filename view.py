@@ -4,8 +4,12 @@ import platform
 
 import controller_new as controller
 import model
-from gui import SingleImagePreviewer, TabbedImagePreviewer, ImageSource
-# from gui import GUI_HeatmapAdjustments
+from gui import SingleImagePreviewer, TabbedImagePreviewer, ImageSource, HeatmapAdjustments
+
+from filters import *
+# from filters import AccurateBlur, ClassicBlur, Desaturate, FadeToColor, FastBlur
+
+# from gui import HeatmapAdjustments
 
 blank_image_path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\gui\blank.bmp'
 
@@ -64,8 +68,8 @@ class View(ttk.Frame):
 
 class SaveLoadAndPreviews(ttk.Frame):
     def __init__(self, parent):
-        ttk.Frame.__init__(self, parent)
-        ttk.Label(self, text="Previews").grid(row=0, column=0, sticky=tk.W)
+        tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+        ttk.Label(self, text="Preview").grid(row=0, column=0, sticky=tk.W)
 
         ttk.Label(self, text="Images").grid(row=1, column=0, sticky=tk.W)
         ttk.Label(self, text="Heatmaps").grid(row=1, column=1, sticky=tk.W)
@@ -105,8 +109,34 @@ class Previews(ttk.Frame):
 
 class FiltersAndSettings(ttk.Frame):
     def __init__(self, parent):
-        ttk.Frame.__init__(self, parent)
-        ttk.Label(self, text="Filters").pack()
+        tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+        # ttk.Label(self, text="Filters").grid(row=0, column=0)
+        ttk.Label(self, text="Available Filters   ").grid(row=1, column=0, sticky=tk.W)
+        ttk.Label(self, text="Selected Filters   ").grid(row=1, column=2, sticky=tk.W)
+        ttk.Label(self, text="Filter Settings   ").grid(row=1, column=3, sticky=tk.W)
+        ttk.Label(self, text="Heatmap Adjustments").grid(row=1, column=4, sticky=tk.W)
+
+        AvailableFilters(self).grid(row=2, column=0)
+        SwapFilters(self).grid(row=2, column=1)
+        ActiveFilters(self).grid(row=2, column=2)
+        FilterSettings(self).grid(row=2, column=3)
+        HeatmapAdjustments(self, controller.on_heatmap_adjustments_updated).grid(row=2, column=4)
+
+class AvailableFilters(ttk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+
+class SwapFilters(ttk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+
+class ActiveFilters(ttk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+
+class FilterSettings(ttk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
 
 if __name__ == "__main__":
     main()

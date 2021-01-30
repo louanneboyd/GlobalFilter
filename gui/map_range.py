@@ -13,7 +13,7 @@ def map_ease_out_quadratic(data):
 def map_ease_inout_quadratic(data):
     return ( 2 * data * data ) if ( data < 0.5 ) else ( 1 - (2 * (1-data) * (1-data)) )
 
-class GUI_HeatmapAdjustments(Frame):
+class HeatmapAdjustments(Frame):
     def __init__(self, parent, callback):
         Frame.__init__(self, parent)
 
@@ -66,5 +66,5 @@ class GUI_HeatmapAdjustments(Frame):
 
 if __name__ == "__main__":
     root = Tk()
-    GUI_HeatmapAdjustments(root, lambda values:print(values)).pack()
+    HeatmapAdjustments(root, lambda values:print(values)).pack()
     root.mainloop()

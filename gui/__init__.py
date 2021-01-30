@@ -1,2 +1,2 @@
-from .map_range import GUI_HeatmapAdjustments
+from .map_range import HeatmapAdjustments
 from .previewer import ImageSource, SingleImagePreviewer, MultiImagePreviewer, TabbedImagePreviewer

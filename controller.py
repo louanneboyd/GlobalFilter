@@ -13,7 +13,7 @@ import model
 
 from gui import SingleImagePreviewer
 from gui import TabbedImagePreviewer
-from gui import GUI_HeatmapAdjustments
+from gui import HeatmapAdjustments
 from gui import ImageSource
 
 available_filters = [
@@ -227,7 +227,7 @@ def main():
     Label(bottom, text="Heatmap Adjustments").grid(row=0, column=4, sticky=W)
     frame = Frame(bottom, highlightbackground="black", highlightthickness="1p")
     frame.grid(row=1, column=4)
-    GUI_HeatmapAdjustments(frame, update_heatmap).pack()
+    HeatmapAdjustments(frame, update_heatmap).pack()
 
     ##################
     ### run

@@ -19,6 +19,9 @@ def on_button_pressed_load_heatmap():
 def on_button_pressed_choose_save_location():
     pass
 
+def on_heatmap_adjustments_updated():
+    pass
+
 ###############################
 # update_previews()
 #
