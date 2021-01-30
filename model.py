@@ -2,8 +2,7 @@ import numpy as np
 
 __image = None
 __heatmap = None
-heatmap_remapped = None
-__heatmap_remapping_data = None
+heatmap_remapping_data = None
 
 def set_input_image(image):
     global __image
@@ -12,18 +11,12 @@ def set_input_image(image):
 def set_input_heatmap(heatmap):
     global __heatmap
     __heatmap = heatmap
-    remap_heatmap(__heatmap_remapping_data)
 
-def remap_heatmap(data):
-    print("is data none? " + str(data is None))
-    if (data is None):
-        global heatmap_remapped
-        heatmap_remapped = __heatmap
-        print(heatmap_remapped is __heatmap)
+def get_remapped_heatmap():
+    if (heatmap_remapping_data is None):
+        return __heatmap
     else:
-        __heatmap_remapping_data = data
-        if (__heatmap is not None):
-            heatmap_remapped = map_range(__heatmap, 0, 1, data["min"], data["max"], True)
+        return map_range(__heatmap, 0, 1, heatmap_remapping_data["min"], heatmap_remapping_data["max"], True)
     # data["curve"]
 
 ###
@@ -42,7 +35,7 @@ def map_range(data, a1, a2, b1, b2, is_clipped):
 def apply_filters(filters):
     global __image
     for filter in filters:
-        __image = filter.run(__image, heatmap_remapped)
+        __image = filter.run(__image, get_remapped_heatmap())
 
 def get_output_image():
     return __image

@@ -18,10 +18,6 @@ class GUI_HeatmapAdjustments(Frame):
         Frame.__init__(self, parent)
 
         self.callback = callback
-        self.min_value = DoubleVar()
-        self.min_value.set(0.)
-        self.max_value = DoubleVar()
-        self.max_value.set(1.)
         self.curve = StringVar()
         self.curve.set("Linear")
 
@@ -33,8 +29,8 @@ class GUI_HeatmapAdjustments(Frame):
         # Label(settings, text="Clamp").grid(row=0, column=0, sticky=W)
         # Checkbutton(settings, variable=None).grid(row=0, column=1, sticky=W)
 
-        Label(settings, text="Curve").grid(row=1, column=0, sticky=W)
-        OptionMenu(settings, None, "Linear", "Ease In (Quadratic)", "Ease Out (Quadratic)", "Ease In/Out (Quadratic)", "Smoothstep").grid(row=1, column=1, sticky=W)
+        # Label(settings, text="Curve").grid(row=1, column=0, sticky=W)
+        # OptionMenu(settings, None, "Linear", "Ease In (Quadratic)", "Ease Out (Quadratic)", "Ease In/Out (Quadratic)", "Smoothstep").grid(row=1, column=1, sticky=W)
 
         Label(settings, text="Minimum").grid(row=2, column=0, sticky=W)
         frame_min = Frame(settings)
@@ -42,9 +38,9 @@ class GUI_HeatmapAdjustments(Frame):
         Label(frame_min, text="    From").pack(side=LEFT)
         Label(frame_min, text="0.0").pack(side=LEFT)
         Label(frame_min, text="To").pack(side=LEFT)
-        e = Entry(frame_min)
-        e.pack(side=LEFT)
-        e.insert(0, "0.0")
+        entry_min = Entry(frame_min)
+        entry_min.pack(side=LEFT)
+        entry_min.insert(0, "0.0")
 
         Label(settings, text="Maximum").grid(row=4, column=0, sticky=W)
         frame_max = Frame(settings)
@@ -52,17 +48,20 @@ class GUI_HeatmapAdjustments(Frame):
         Label(frame_max, text="    From").pack(side=LEFT)
         Label(frame_max, text="1.0").pack(side=LEFT)
         Label(frame_max, text="To").pack(side=LEFT)
-        e = Entry(frame_max)
-        e.pack(side=LEFT)
-        e.insert(0, "1.0")
+        entry_max = Entry(frame_max)
+        entry_max.pack(side=LEFT)
+        entry_max.insert(0, "1.0")
+
+        self.get_min_value = lambda: float(entry_min.get())
+        self.get_max_value = lambda: float(entry_max.get())
 
         Button(settings, text="Update", command=lambda:callback(self.get_values())).grid(row=6, columnspan=2)
 
     def get_values(self):
         return {
-        "min": self.min_value.get(),
-        "max": self.max_value.get(),
-        "curve": self.curve.get(),
+        "min": self.get_min_value(),
+        "max": self.get_max_value(),
+        # "curve": self.curve.get(),
         }
 
 if __name__ == "__main__":

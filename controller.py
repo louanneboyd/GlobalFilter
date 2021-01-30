@@ -12,7 +12,7 @@ import filters.accurate_blur
 import model
 
 from gui import GUI_SingleImagePreviewer
-from gui import GUI_MultiImagePreviewer
+from gui import GUI_TabbedImagePreviewer
 from gui import GUI_HeatmapAdjustments
 from gui import ImageSource
 
@@ -34,15 +34,8 @@ output_frame = None
 
 preview_index = 0
 preview_heatmap = None
-heatmap_remapping_data = {}
 
 NORMALIZED = 1./255
-
-def make_image_label(gui_parent, image):
-    image = ImageTk.PhotoImage(Image.fromarray(image)) # convert to tk's image format
-    label = Label(gui_parent, image=image)
-    label.image = image
-    return label
 
 def add_filter(frame):
     selected = available_filters[selected_filter_from_available.get()]
@@ -65,11 +58,10 @@ def remove_all_filters(frame):
         child.destroy()
 
 def update_heatmap(data):
-    global preview_heatmap
-    global heatmap_remapping_data
-    if (preview_heatmap is not None):
-        model.remap_heatmap(data)
-        preview_heatmap = model.remapped_heatmap
+    model.heatmap_remapping_data = data
+    update_adjusted_heatmap_preview()
+    update_output_preview()
+    print(data)
 
 def run(image_path, heatmap_path, filters):
 
@@ -95,17 +87,32 @@ def run_all():
 
 def update_previews():
     # update preview of the input images
-    if (image_filenames is not None and preview_index < len(image_filenames)):
-        preview_input_image.set(image_filenames[preview_index], ImageSource.FILEPATH)
+    if (preview_index < len(image_filenames)):
+        preview_input_image.tabs[0].winfo_children()[0].set(image_filenames[preview_index], ImageSource.FILEPATH)
 
     # update preview of the input heatmaps
-    if (heatmap_filenames is not None and preview_index < len(heatmap_filenames)):
-        preview_heatmap.set(heatmap_filenames[preview_index], ImageSource.FILEPATH)
+    if (preview_index < len(heatmap_filenames)):
+        # preview_heatmap.set(heatmap_filenames[preview_index], ImageSource.FILEPATH)
+        # update original
+        path = heatmap_filenames[preview_index]
+        preview_heatmap.tabs[0].winfo_children()[0].set(path, ImageSource.FILEPATH)
+        # update adjusted
+    update_adjusted_heatmap_preview()
+    update_output_preview()
 
-    # update preview of the output images
+# update preview of the output images
+def update_output_preview():
     if (len(image_filenames) > preview_index and len(heatmap_filenames) > preview_index):
         run(image_filenames[preview_index], heatmap_filenames[preview_index], active_filters)
-        preview_output.set(model.get_output_image(), ImageSource.ARRAY)
+        preview_output.tabs[0].winfo_children()[0].set(model.get_output_image(), ImageSource.ARRAY)
+
+def update_adjusted_heatmap_preview():
+    if (preview_index < len(heatmap_filenames)):
+        path = heatmap_filenames[preview_index]
+        heatmap = cv2.imread(path, cv2.IMREAD_GRAYSCALE).astype("float32") * NORMALIZED
+        model.set_input_heatmap(heatmap)
+        heatmap = (model.get_remapped_heatmap() / NORMALIZED).astype("uint8")
+        preview_heatmap.tabs[1].winfo_children()[0].set(heatmap, ImageSource.ARRAY)
 
 def load_images():
     global image_filenames
@@ -131,7 +138,7 @@ def main():
     # Test image
     path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\images\04.jpg'
     hmpath = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\heatmaps\n04.jpg'
-    image = cv2.imread(path)
+    blank_image_path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\gui\blank.bmp'
 
     gui = Tk()
     gui.winfo_toplevel().title("Global Filter")
@@ -154,8 +161,10 @@ def main():
     input_image_frame.grid(row=1, column=0)
     image_size = "2i"
     global preview_input_image
-    preview_input_image = GUI_SingleImagePreviewer(input_image_frame, path, data_type = ImageSource.FILEPATH, max_width=image_size, max_height=image_size)
+    preview_input_image = GUI_TabbedImagePreviewer(input_image_frame, max_width=image_size, max_height=image_size)
     preview_input_image.pack(side=LEFT, padx=10, pady=10)
+    preview_input_image.add_single_image("Original", image_source=blank_image_path, data_type=ImageSource.FILEPATH)
+    preview_input_image.add_single_image("Example", image_source=path, data_type=ImageSource.FILEPATH)
     # GUI_SingleImagePreviewer(input_image_frame, image_source=path, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size).pack(side=LEFT, padx=10, pady=10)
     Button(top, text="Load", command=load_images).grid(row=2, column=0, sticky=W)
 
@@ -163,16 +172,22 @@ def main():
     input_heatmap_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
     input_heatmap_frame.grid(row=1, column=1)
     global preview_heatmap
-    preview_heatmap = GUI_SingleImagePreviewer(input_heatmap_frame, image_source=hmpath, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size)
+    preview_heatmap = GUI_TabbedImagePreviewer(input_heatmap_frame, max_width=image_size, max_height=image_size)
     preview_heatmap.pack(side=LEFT, padx=10, pady=10)
+    preview_heatmap.add_single_image("Original", blank_image_path, ImageSource.FILEPATH)
+    preview_heatmap.add_single_image("Adjusted", blank_image_path, ImageSource.FILEPATH)
+    preview_heatmap.add_single_image("Example (Orig.)", hmpath, ImageSource.FILEPATH)
+    preview_heatmap.add_single_image("Example (Adj.)", hmpath, ImageSource.FILEPATH)
     Button(top, text="Load", command=load_heatmaps).grid(row=2, column=1, sticky=W)
 
     Label(top, text="Result (Preview)").grid(row=0, column=3, sticky=W)
     output_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
     output_frame.grid(row=1, column=3)
     global preview_output
-    preview_output = GUI_SingleImagePreviewer(output_frame, image_source=path, data_type=ImageSource.FILEPATH, max_width=image_size, max_height=image_size)
+    preview_output = GUI_TabbedImagePreviewer(output_frame, max_width=image_size, max_height=image_size)
     preview_output.pack(side=LEFT, padx=10, pady=10)
+    preview_output.add_single_image("Original", image_source=blank_image_path, data_type=ImageSource.FILEPATH)
+    preview_output.add_single_image("Example", image_source=path, data_type=ImageSource.FILEPATH)
     Button(top, text="Choose Save Location...").grid(row=2, column=3, sticky=W)
 
     ################ bottom row (filter & heatmap options) ################
