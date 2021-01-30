@@ -7,6 +7,7 @@ import model
 from gui import SingleImagePreviewer, TabbedImagePreviewer, ImageSource, HeatmapAdjustments
 
 blank_image_path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\gui\blank.bmp'
+refresh_settings_observers = [] # (observer design pattern) a list of the functions to call whenever refresh_settings() is called
 
 def main():
     # hidpi support on windows
@@ -34,6 +35,12 @@ class View(ttk.Frame):
         self.settings = FiltersAndSettings(self)
         self.settings.pack()
 
+    def get_selected_filter_index_from_available(self):
+        return self.settings.available.selected_filter_from_available.get()
+
+    def get_selected_filter_index_from_active(self):
+        return self.settings.active.selected_filter_from_active.get()
+
     def preview_image(self, index):
         if index < len(controller.image_filenames):
             self.__set_preview_input(controller.image_filenames[index])
@@ -41,7 +48,6 @@ class View(ttk.Frame):
             self.__set_preview_heatmap(controller.heatmap_filenames[index])
         if index < len(controller.image_filenames) and index < len(controller.heatmap_filenames):
             self.__set_preview_result(controller.image_filenames[index], controller.heatmap_filenames[index])
-
 
     def __set_preview_input(self, filename):
         self.previews.image_input.set(filename, ImageSource.FILEPATH)
@@ -60,6 +66,10 @@ class View(ttk.Frame):
     def __set_preview_result(self, image, heatmap):
         model.run(image, heatmap, controller.active_filters)
         self.previews.image_result.set(model.get_output_image(), ImageSource.ARRAY)
+
+    def refresh_settings(self):
+        for func in refresh_settings_observers:
+            func()
 
 class SaveLoadAndPreviews(ttk.Frame):
     def __init__(self, parent):
@@ -111,9 +121,11 @@ class FiltersAndSettings(ttk.Frame):
         ttk.Label(self, text="Filter Settings   ").grid(row=1, column=3, sticky=tk.W)
         ttk.Label(self, text="Heatmap Adjustments").grid(row=1, column=4, sticky=tk.W)
 
-        AvailableFilters(self).grid(row=2, column=0)
+        self.available = AvailableFilters(self)
+        self.available.grid(row=2, column=0)
         SwapFilters(self).grid(row=2, column=1)
-        ActiveFilters(self).grid(row=2, column=2)
+        self.active = ActiveFilters(self)
+        self.active.grid(row=2, column=2)
         FilterSettings(self).grid(row=2, column=3)
         HeatmapAdjustments(self, controller.on_heatmap_adjustments_updated).grid(row=2, column=4)
 
@@ -127,10 +139,23 @@ class AvailableFilters(ttk.Frame):
 class SwapFilters(ttk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+        ttk.Button(self, text="Add", command = controller.on_button_pressed_filter_add).pack(fill=tk.X)
+        ttk.Button(self, text="Remove", command = controller.on_button_pressed_filter_remove).pack(fill=tk.X)
+        ttk.Button(self, text="Remove  All", command = controller.on_button_pressed_filter_remove_all).pack(fill=tk.X)
+        ttk.Button(self, text="▲", command = controller.on_button_pressed_filter_move_up).pack(fill=tk.X)
+        ttk.Button(self, text="▼", command = controller.on_button_pressed_filter_move_down).pack(fill=tk.X)
 
 class ActiveFilters(ttk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+        self.selected_filter_from_active = tk.IntVar()
+        refresh_settings_observers.append(self.refresh)
+
+    def refresh(self): # make sure that the visible list of active filters is up to date
+        for child in self.winfo_children():
+            child.destroy()
+        for i, filter in enumerate(controller.active_filters):
+            tk.Radiobutton(self, text=filter.name, value=i, variable=self.selected_filter_from_active, indicator = 0, anchor=tk.W).pack(side=tk.TOP, fill=tk.X)
 
 class FilterSettings(ttk.Frame):
     def __init__(self, parent):

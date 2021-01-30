@@ -1,6 +1,6 @@
 from tkinter import filedialog
-from available_filters import available_filters
 
+from available_filters import available_filters
 
 image_filenames = []
 heatmap_filenames = []
@@ -23,6 +23,20 @@ def on_button_pressed_choose_save_location():
 def on_heatmap_adjustments_updated():
     pass
 
-###############################
-# update_previews()
-#
+def on_button_pressed_filter_add():
+    filter = available_filters[view.get_selected_filter_index_from_available()]
+    active_filters.append(filter())
+    view.refresh_settings()
+
+def on_button_pressed_filter_remove():
+    pass
+
+def on_button_pressed_filter_remove_all():
+    active_filters.clear()
+    view.refresh_settings()
+
+def on_button_pressed_filter_move_up():
+    pass
+
+def on_button_pressed_filter_move_down():
+    pass
