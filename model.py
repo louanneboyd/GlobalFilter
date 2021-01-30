@@ -1,8 +1,10 @@
 import numpy as np
+import cv2
 
 __image = None
 __heatmap = None
 heatmap_remapping_data = None
+NORMALIZED =  1./255
 
 def set_input_image(image):
     global __image
@@ -39,3 +41,14 @@ def apply_filters(filters):
 
 def get_output_image():
     return __image
+
+def run(image_path, heatmap_path, filters):
+
+    # read image
+    image = cv2.imread(image_path)
+    heatmap = cv2.imread(heatmap_path, cv2.IMREAD_GRAYSCALE).astype("float32") * NORMALIZED
+
+    # filter image
+    set_input_image(image)
+    set_input_heatmap(heatmap)
+    apply_filters(filters)

@@ -35,52 +35,52 @@ class ImageSource():
     ARRAY = 0
     FILEPATH = 1
 
-class GUI_SingleImagePreviewer(Frame):
-    def __init__(self, parent, image_source, data_type, max_width=None, max_height=None):
+class SingleImagePreviewer(Frame):
+    def __init__(self, parent, image_source, source, max_width=None, max_height=None):
         Frame.__init__(self, parent)
         self.label = None
         self.max_width = max_width
         self.max_height = max_height
-        self.set(image_source, data_type)
+        self.set(image_source, source)
 
-    def set(self, image_source, data_type):
-        if (data_type == ImageSource.ARRAY):
+    def set(self, image_source, source):
+        if (source == ImageSource.ARRAY):
             self.image = image_from_array(self, image_source, self.max_width, self.max_height) # save a ref to the image so the garbage collector doesn't delete the image
-        elif (data_type == ImageSource.FILEPATH):
+        elif (source == ImageSource.FILEPATH):
             self.image = image_from_file(self, image_source, self.max_width, self.max_height)
         else:
-            raise Exception("Please specify the data_type, i.e., the format that image is in. (ImageSource.ARRAY, ImageSource.FILEPATH, ...)")
+            raise Exception("Please specify the source, i.e., the format that image is in. (ImageSource.ARRAY, ImageSource.FILEPATH, ...)")
 
         if (self.label is not None):
             self.label.destroy()
         self.label = Label(self, image=self.image)
         self.label.pack()
 
-class GUI_MultiImagePreviewer(Frame):
-    def __init__(self, parent, image_sources, data_type, max_width=None, max_height=None):
+class MultiImagePreviewer(Frame):
+    def __init__(self, parent, image_sources, source, max_width=None, max_height=None):
         Frame.__init__(self, parent)
         self.image_sources = image_sources
-        self.image_frame = GUI_SingleImagePreviewer(self, image_sources[0], data_type, max_width, max_height)
+        self.image_frame = SingleImagePreviewer(self, image_sources[0], source, max_width, max_height)
         self.image_frame.pack()
-        self.data_type = data_type
+        self.source = source
         self.index = 0
         Button(self, text="Next", command=self.next).pack()
 
     def next(self):
         self.index = (self.index + 1) % len(self.image_sources)
-        self.image_frame.set(self.image_sources[self.index], self.data_type)
+        self.image_frame.set(self.image_sources[self.index], self.source)
 
     def show(self, image_index):
         if image_index < len(self.image_sources):
             self.index = image_index
-            self.image_frame.set(self.image_sources[self.index], self.data_type)
+            self.image_frame.set(self.image_sources[self.index], self.source)
 
-    def set(self, image_sources, data_type):
+    def set(self, image_sources, source):
         self.image_sources = image_sources
-        self.data_type = data_type
-        self.image_frame.set(self.image_sources[0], self.data_type)
+        self.source = source
+        self.image_frame.set(self.image_sources[0], self.source)
 
-class GUI_TabbedImagePreviewer(ttk.Notebook):
+class TabbedImagePreviewer(ttk.Notebook):
     def __init__(self, parent, max_width=None, max_height=None):
         ttk.Notebook.__init__(self, parent)
         self.max_width = max_width
@@ -92,17 +92,17 @@ class GUI_TabbedImagePreviewer(ttk.Notebook):
         # self.add(tab2, text="Add New Record")
         self.pack(expand=1, fill='both')
 
-    def add_multi_image(self, tab_name, image_sources, data_type):
+    def add_multi_image(self, tab_name, image_sources, source):
         f = ttk.Frame(self)
         self.tabs.append(f)
         self.add(f, text=tab_name)
-        GUI_MultiImagePreviewer(f, image_sources, data_type, max_width=self.max_width, max_height=self.max_height).pack()
+        MultiImagePreviewer(f, image_sources, source, max_width=self.max_width, max_height=self.max_height).pack()
 
-    def add_single_image(self, tab_name, image_source, data_type):
+    def add_single_image(self, tab_name, image_source, source):
         f = ttk.Frame(self)
         self.tabs.append(f)
         self.add(f, text=tab_name)
-        GUI_SingleImagePreviewer(f, image_source, data_type, max_width=self.max_width, max_height=self.max_height).pack()
+        SingleImagePreviewer(f, image_source, source, max_width=self.max_width, max_height=self.max_height).pack()
 
 if __name__ == "__main__":
     root = Tk()
@@ -112,13 +112,13 @@ if __name__ == "__main__":
     path3 = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\images\06.jpg'
     cv2_image = cv2.imread(path)
 
-    tabs = GUI_TabbedImagePreviewer(root, max_width="4i", max_height="4i")
+    tabs = TabbedImagePreviewer(root, max_width="4i", max_height="4i")
     tabs.pack()
     tabs.add_single_image("One lonely image", path, ImageSource.FILEPATH)
     tabs.add_multi_image("Oh wow, two images!", [path2, path3], ImageSource.FILEPATH)
 
-    # GUI_MultiImagePreviewer(root, [path, path2, path3], data_type = ImageSource.FILEPATH, max_width="4i", max_height="4i").pack()
+    # MultiImagePreviewer(root, [path, path2, path3], source = ImageSource.FILEPATH, max_width="4i", max_height="4i").pack()
 
-    # GUI_SingleImagePreviewer(root, cv2_image, data_type = ImageSource.ARRAY, max_width="2i", max_height="2i").pack()
-    # GUI_SingleImagePreviewer(root, image_source=path, data_type=ImageSource.FILEPATH, max_width="1i", max_height="1i").pack()
+    # SingleImagePreviewer(root, cv2_image, source = ImageSource.ARRAY, max_width="2i", max_height="2i").pack()
+    # SingleImagePreviewer(root, image_source=path, source=ImageSource.FILEPATH, max_width="1i", max_height="1i").pack()
     root.mainloop()
