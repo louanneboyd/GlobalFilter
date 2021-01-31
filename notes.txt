@@ -1,0 +1,30 @@
+Remember to add a "RUN" button to the GUI prototype. Otherwise how do you even run all of the files?
+
+╔═══════════════════════╗
+║ Prep for the meeting: ║
+╚═══════════════════════╝
+  Include some examples of the three different blurs: fast_blur, accurate_blur, and the blur algorithm used in Java.
+  Perhaps include a few examples. Some that show sharp edges, etc. Get some images with very different content in them.
+  fast_blur is the same as the classic algorithm, blending between multiple images. currently it just does 2 images,
+  but the java one does (20 I think?). Any number can be selected.
+  ***See the folder "blur comparison"***
+
+  What are the things she wants in regards to on-the-fly editing of the heatmap/image?
+  (Heatmap adjusting is not in yet, but should be fairly quick to implement.)
+
+luminance level
+
+Degree of Visual Angle
+- see which parts of the image would be blurry based on the person's vision, based on the size of the screen and the distance from the screen
+
+
+**TODO**
+- Look at the code that LouAnne sent me
+- compare fade-to-color (with black) vs fade luminance
+- add attributes to the gui
+- allow scrubbing through all loaded images/heatmaps in the gui
+- make "remove" button remove only the selected filter
+- add a venv or some sort of project file, so that numpy, opencv, PIL, etc. are either included in the download
+    or else automatically downloaded when the program is run
+- make the image generation be asynchronous
+- make sure that images/heatmaps/save location are all selected before pressing run
