@@ -1,5 +1,5 @@
 import tkinter as tk
-import tkinter.ttk as ttk
+from tkinter import messagebox, ttk
 import platform
 import cv2
 
@@ -7,8 +7,15 @@ import controller_new as controller
 import model
 from gui import SingleImagePreviewer, TabbedImagePreviewer, ImageSource, HeatmapAdjustments
 
-blank_image_path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\gui\blank.bmp'
+blank_image_path = 'C:/Users/bmicm/OneDrive/Documents/GitHub/EyeTrackingBlurring/gui/blank.bmp'
 observers_to_refresh = [] # (observer design pattern) a list of the functions to call whenever refresh_settings() is called
+
+def change_state_of_all_widgets(root, state): # states: tk.ENABLED, tk.DISABLED, tk.NORMAL
+    if "state" in root.config():
+        root["state"] = state
+    for child in root.winfo_children():
+        change_state_of_all_widgets(child, state)
+
 
 def main():
     # hidpi support on windows
@@ -35,6 +42,9 @@ class View(ttk.Frame):
 
         self.settings = FiltersAndSettings(self)
         self.settings.pack()
+
+        # allow direct access to the tk.messagebox
+        self.messagebox = tk.messagebox
 
         # reload preview images whenever view.refresh is called
         observers_to_refresh.append(lambda: self.preview_image(0))
@@ -73,6 +83,10 @@ class View(ttk.Frame):
     def refresh(self):
         for func in observers_to_refresh:
             func()
+
+    def change_state(self, state):
+        change_state_of_all_widgets(self, state)
+
 
 class SaveLoadAndPreviews(ttk.Frame):
     def __init__(self, parent):
@@ -133,6 +147,7 @@ class FiltersAndSettings(ttk.Frame):
         self.active.grid(row=2, column=2)
         FilterSettings(self).grid(row=2, column=3)
         HeatmapAdjustments(self, controller.on_heatmap_adjustments_updated).grid(row=2, column=4)
+        RunButton(self).grid(row=3, column=5, sticky=tk.W)
 
 class AvailableFilters(ttk.Frame):
     def __init__(self, parent):
@@ -165,6 +180,11 @@ class ActiveFilters(ttk.Frame):
 class FilterSettings(ttk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+
+class RunButton(ttk.Frame):
+    def __init__(self, parent):
+        tk.Frame.__init__(self, parent)
+        tk.Button(self, text="▶ Run", bg="green", command=controller.on_button_pressed_run).pack()
 
 if __name__ == "__main__":
     main()
