@@ -3,7 +3,7 @@ from tkinter import messagebox, ttk
 import platform
 import cv2
 
-import controller_new as controller
+import controller
 import model
 from gui import SingleImagePreviewer, TabbedImagePreviewer, ImageSource, HeatmapAdjustments
 

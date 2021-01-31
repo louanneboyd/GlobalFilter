@@ -1,238 +1,94 @@
 import cv2
-from tkinter import *
-from tkinter import ttk
+from os.path import split
 from tkinter import filedialog
-import platform
-from PIL import Image, ImageTk
 
-import filters.desaturate
-import filters.fade_to_color
-import filters.fast_blur
-import filters.accurate_blur
+from available_filters import available_filters
 import model
-
-from gui import SingleImagePreviewer
-from gui import TabbedImagePreviewer
-from gui import HeatmapAdjustments
-from gui import ImageSource
-
-available_filters = [
-    filters.accurate_blur.AccurateBlur,
-    filters.fast_blur.FastBlur,
-    filters.desaturate.Desaturate,
-    filters.fade_to_color.FadeToColor,
-]
-
-active_filters = []
 
 image_filenames = []
 heatmap_filenames = []
+active_filters = []
+save_directory = None
 
-input_image_frame = None
-input_heatmap_frame = None
-output_frame = None
 
-preview_index = 0
-preview_heatmap = None
-
-NORMALIZED = 1./255
-
-def add_filter(frame):
-    selected = available_filters[selected_filter_from_available.get()]
-    global active_filters
-    active_filters.append( selected() )
-    Radiobutton(frame, text=selected.name, value=len(active_filters) - 1, variable=selected_filter_from_active, indicator = 0, anchor=W).pack(side=BOTTOM, fill=X)
-    update_previews()
-
-# @TODO make remove_filter remove just one filter, rather than all filters
-def remove_filter(frame):
-    global active_filters
-    active_filters = []
-    for child in frame.winfo_children():
-        child.destroy()
-
-def remove_all_filters(frame):
-    global active_filters
-    active_filters = []
-    for child in frame.winfo_children():
-        child.destroy()
-
-def update_heatmap(data):
-    model.heatmap_remapping_data = data
-    update_adjusted_heatmap_preview()
-    update_output_preview()
-    print(data)
-
-def run(image_path, heatmap_path, filters):
-
-    # read image
-    image = cv2.imread(image_path)
-    heatmap = cv2.imread(heatmap_path, cv2.IMREAD_GRAYSCALE).astype("float32") * NORMALIZED
-
-    # filter image
-    model.set_input_image(image)
-    model.set_input_heatmap(heatmap)
-    model.apply_filters(filters)
-
-def run_all():
-    print(len(image_filenames))
-    for i in range(len(image_filenames)):
-        run(image_filenames[i], heatmap_filenames[i], active_filters)
-
-        # # display
-        # cv2.imshow("filtered", model.get_output_image())
-        # # wait for user
-        # cv2.waitKey(0)
-    # Alert user that the imgaes have finished
-
-def update_previews():
-    # update preview of the input images
-    if (preview_index < len(image_filenames)):
-        preview_input_image.tabs[0].winfo_children()[0].set(image_filenames[preview_index], ImageSource.FILEPATH)
-
-    # update preview of the input heatmaps
-    if (preview_index < len(heatmap_filenames)):
-        # preview_heatmap.set(heatmap_filenames[preview_index], ImageSource.FILEPATH)
-        # update original
-        path = heatmap_filenames[preview_index]
-        preview_heatmap.tabs[0].winfo_children()[0].set(path, ImageSource.FILEPATH)
-        # update adjusted
-    update_adjusted_heatmap_preview()
-    update_output_preview()
-
-# update preview of the output images
-def update_output_preview():
-    if (len(image_filenames) > preview_index and len(heatmap_filenames) > preview_index):
-        run(image_filenames[preview_index], heatmap_filenames[preview_index], active_filters)
-        preview_output.tabs[0].winfo_children()[0].set(model.get_output_image(), ImageSource.ARRAY)
-
-def update_adjusted_heatmap_preview():
-    if (preview_index < len(heatmap_filenames)):
-        path = heatmap_filenames[preview_index]
-        heatmap = cv2.imread(path, cv2.IMREAD_GRAYSCALE).astype("float32") * NORMALIZED
-        model.set_input_heatmap(heatmap)
-        heatmap = (model.get_remapped_heatmap() / NORMALIZED).astype("uint8")
-        preview_heatmap.tabs[1].winfo_children()[0].set(heatmap, ImageSource.ARRAY)
-
-def load_images():
+def on_button_pressed_load_image():
     global image_filenames
-    global preview_index
-    preview_index = 0
-    # show an file dialog box and return the path to the selected file
-    image_filenames = filedialog.askopenfilenames(title = "Select the input images")
-    update_previews()
+    new_filenames = filedialog.askopenfilenames(title = "Select the images") # show a file dialog box
+    if (new_filenames != ''): # only update list of filenames if there were any filenames actually selected
+        image_filenames = new_filenames
+    view.preview_image(0)
 
-
-def load_heatmaps():
+def on_button_pressed_load_heatmap():
     global heatmap_filenames
-    # show an file dialog box and return the path to the selected file
-    heatmap_filenames = filedialog.askopenfilenames(title = "Select the input heatmaps")
-    update_previews()
+    new_filenames = filedialog.askopenfilenames(title = "Select the heatmaps") # show a file dialog box
+    if (new_filenames != ''): # only update list of filenames if there were any filenames actually selected
+        heatmap_filenames = new_filenames
+    view.preview_image(0)
 
-def main():
-    # hidpi support on windows
-    if (platform.system() == "Windows"):
-        import ctypes
-        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+def on_button_pressed_choose_save_location():
+    global save_directory
+    new_dir = filedialog.askdirectory(title = "Select where the generated images will be saved")
+    if (new_dir != ''): # only update folder if there was a folder actually selected
+        save_directory = new_dir
 
-    # Test image
-    path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\images\04.jpg'
-    hmpath = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\data\first 50 images\input\heatmaps\n04.jpg'
-    blank_image_path = r'C:\Users\bmicm\OneDrive\Documents\GitHub\EyeTrackingBlurring\gui\blank.bmp'
+def on_heatmap_adjustments_updated(data):
+    model.heatmap_remapping_data = data
+    view.refresh()
 
-    gui = Tk()
-    gui.winfo_toplevel().title("Global Filter")
+def on_button_pressed_filter_add():
+    filter = available_filters[view.get_selected_filter_index_from_available()]
+    active_filters.append(filter())
+    view.refresh()
 
-    top = Frame(gui)
-    bottom = Frame(gui)
-    top.pack()
-    ttk.Separator(gui,orient=HORIZONTAL).pack(side=BOTTOM)
-    bottom.pack(side=BOTTOM)
+def on_button_pressed_filter_remove():
+    pass
 
-    global selected_filter_from_available
-    selected_filter_from_available = IntVar()
-    global selected_filter_from_active
-    selected_filter_from_active = IntVar()
+def on_button_pressed_filter_remove_all():
+    active_filters.clear()
+    view.refresh()
 
-    ################ top row (image previews) ################
-    Label(top, text="Images").grid(row=0, column=0, sticky=W)
-    global input_image_frame
-    input_image_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
-    input_image_frame.grid(row=1, column=0)
-    image_size = "2i"
-    global preview_input_image
-    preview_input_image = TabbedImagePreviewer(input_image_frame, max_width=image_size, max_height=image_size)
-    preview_input_image.pack(side=LEFT, padx=10, pady=10)
-    preview_input_image.add_single_image("Original", image_source=blank_image_path, source=ImageSource.FILEPATH)
-    preview_input_image.add_single_image("Example", image_source=path, source=ImageSource.FILEPATH)
-    # SingleImagePreviewer(input_image_frame, image_source=path, source=ImageSource.FILEPATH, max_width=image_size, max_height=image_size).pack(side=LEFT, padx=10, pady=10)
-    Button(top, text="Load", command=load_images).grid(row=2, column=0, sticky=W)
+def on_button_pressed_filter_move_up():
+    pass
 
-    Label(top, text="Heatmaps").grid(row=0, column=1, sticky=W)
-    input_heatmap_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
-    input_heatmap_frame.grid(row=1, column=1)
-    global preview_heatmap
-    preview_heatmap = TabbedImagePreviewer(input_heatmap_frame, max_width=image_size, max_height=image_size)
-    preview_heatmap.pack(side=LEFT, padx=10, pady=10)
-    preview_heatmap.add_single_image("Original", blank_image_path, ImageSource.FILEPATH)
-    preview_heatmap.add_single_image("Adjusted", blank_image_path, ImageSource.FILEPATH)
-    preview_heatmap.add_single_image("Example (Orig.)", hmpath, ImageSource.FILEPATH)
-    preview_heatmap.add_single_image("Example (Adj.)", hmpath, ImageSource.FILEPATH)
-    Button(top, text="Load", command=load_heatmaps).grid(row=2, column=1, sticky=W)
+def on_button_pressed_filter_move_down():
+    pass
 
-    Label(top, text="Result (Preview)").grid(row=0, column=3, sticky=W)
-    output_frame = Frame(top, highlightbackground="black", highlightthickness="1p")
-    output_frame.grid(row=1, column=3)
-    global preview_output
-    preview_output = TabbedImagePreviewer(output_frame, max_width=image_size, max_height=image_size)
-    preview_output.pack(side=LEFT, padx=10, pady=10)
-    preview_output.add_single_image("Original", image_source=blank_image_path, source=ImageSource.FILEPATH)
-    preview_output.add_single_image("Example", image_source=path, source=ImageSource.FILEPATH)
-    Button(top, text="Choose Save Location...").grid(row=2, column=3, sticky=W)
+def on_button_pressed_run():
+    print(len(image_filenames))
 
-    ################ bottom row (filter & heatmap options) ################
+    # Fatal user mistakes (the filter won't run without these)
+    if not image_filenames:
+        view.messagebox.showwarning(title="Missing Images", message="Before running the filter, please click \"Load Images\" and select the images on which to run the filter")
+        return
+    if not heatmap_filenames:
+        view.messagebox.showwarning(title="Missing Heatmaps", message="Before running the filter, please click \"Load Heatmaps\" and select the heatmaps on which to run the filter")
+        return
+    if len(image_filenames) < len(heatmap_filenames):
+        view.messagebox.showwarning(title="Input Mismatch: Too Many Heatmaps; Not Enough Images", message=f"You've selected {len(image_filenames)} image(s) and {len(heatmap_filenames)} heatmap(s). There should be exactly one heatmap per image. \nPlease check that you have selected all of the files that you need.")
+        return
+    if len(image_filenames) > len(heatmap_filenames):
+        view.messagebox.showwarning(title="Input Mismatch: Too Many Images; Not Enough Heatmaps", message=f"You've selected {len(image_filenames)} image(s) and {len(heatmap_filenames)} heatmap(s). There should be exactly one heatmap per image. \nPlease check that you have selected all of the files that you need.")
+        return
+    if not save_directory:
+        view.messagebox.showwarning(title="Missing Save Location", message="Before running the filter, please click \"Choose Save Location\" and select a folder for the newly generated images to be saved to.")
+        return
 
-    ##################
-    ### available filters
-    Label(bottom, text="Available Filters").grid(row=0, column=0, sticky=W)
-    frame = Frame(bottom, highlightbackground="black", highlightthickness="1p")
-    frame.grid(row=1, column=0)
-    for i, filter in enumerate(available_filters):
-        Radiobutton(frame, text=filter.name, value=i, variable=selected_filter_from_available, indicator = 0, anchor=W).pack(side=BOTTOM, fill=X)
+    # Possible user mistakes (the user may have made a mistake, or may be intending this behavior)
+    if not active_filters:
+        is_ok = view.messagebox.askokcancel(title="No Filters Were Selected", message="No Filters Were Selected. The generated images will be the same as the input images.\nIf this is intentional, please press \"ok\" to continue.")
+        if not is_ok:
+            return
 
-    ##################
-    ### active filters
-    Label(bottom, text="Selected Filters").grid(row=0, column=2, sticky=W)
-    active_filters_frame = Frame(bottom, highlightbackground="black", highlightthickness="1p")
-    active_filters_frame.grid(row=1, column=2)
-
-    ##################
-    ### buttons for filter adding & ordering
-    frame = Frame(bottom)
-    frame.grid(row=1, column=1)
-    Button(frame, text="Add", command = lambda: add_filter(active_filters_frame)).pack(fill=X)
-    Button(frame, text="Remove", command = lambda: remove_filter(active_filters_frame)).pack(fill=X)
-    Button(frame, text="Remove  All", command = lambda: remove_all_filters(active_filters_frame)).pack(fill=X)
-    Button(frame, text="▲").pack(fill=X)
-    Button(frame, text="▼").pack(fill=X)
-
-    ##################
-    ### settings for the selected active filter
-    Label(bottom, text="Filter Settings").grid(row=0, column=3, sticky=W)
-    # frame = Frame(bottom, highlightbackground="black", highlightthickness="1p")
-    # frame.grid(row=1, column=3)
-
-    ##################
-    ### heatmap adjustments
-    Label(bottom, text="Heatmap Adjustments").grid(row=0, column=4, sticky=W)
-    frame = Frame(bottom, highlightbackground="black", highlightthickness="1p")
-    frame.grid(row=1, column=4)
-    HeatmapAdjustments(frame, update_heatmap).pack()
-
-    ##################
-    ### run
-    Button(bottom, text="▶ Run", bg="green", command=run_all).grid(row=0, column=5, sticky=W)
-
-    gui.mainloop()
-
-main()
+    # Finally, run the filter on all of the files
+    view.change_state("disabled")
+    for i in range(len(image_filenames)):
+        model.run(image_filenames[i], heatmap_filenames[i], active_filters)
+        filename_without_path = split(image_filenames[i])[1]
+        path = save_directory + "/" + filename_without_path
+        cv2.imwrite(filename = path, img = model.get_output_image())
+        # # display
+        # imshow("filtered", model.get_output_image())
+        # waitKey(0) # wait for user input to show next image
+    count = len(image_filenames)
+    view.messagebox.showinfo(title="Filter complete!", message=str(count) + (" images have " if count != 1 else " image has ") + "been generated and saved to the folder:\n" + save_directory)
+    view.change_state("normal")
