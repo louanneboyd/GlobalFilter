@@ -7,7 +7,7 @@ import controller
 import model
 from gui import SingleImagePreviewer, TabbedImagePreviewer, ImageSource, HeatmapAdjustments
 
-blank_image_path = 'C:/Users/bmicm/OneDrive/Documents/GitHub/EyeTrackingBlurring/gui/blank.bmp'
+blank_image_path = 'gui/blank.bmp'
 observers_to_refresh = [] # (observer design pattern) a list of the functions to call whenever refresh_settings() is called
 
 def change_state_of_all_widgets(root, state): # states: tk.ENABLED, tk.DISABLED, tk.NORMAL
