@@ -36,7 +36,7 @@ def on_heatmap_adjustments_updated(data):
     view.refresh()
 
 def on_button_pressed_filter_add():
-    filter = available_filters[view.get_selected_filter_index_from_available()]
+    filter = available_filters[view.get_selected_available_filter_index()]
     active_filters.append(filter())
     view.refresh()
 

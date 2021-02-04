@@ -11,7 +11,7 @@ class AccurateBlur:
         'kernel size' : Attribute (
             name = 'Blur Amount / Gaussian Kernel Width (pixels)',
             default_value = 81,
-            display = ColorPickerDisplay()
+            display = RGBColorPickerAttribute()
         )
     }
 

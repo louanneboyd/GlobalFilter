@@ -1,11 +1,12 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, ttk, colorchooser
 import platform
 import cv2
 
 import controller
 import model
 from gui import SingleImagePreviewer, TabbedImagePreviewer, ImageSource, HeatmapAdjustments
+from filters.helpers import attributes as attr
 
 blank_image_path = 'gui/blank.bmp'
 observers_to_refresh = [] # (observer design pattern) a list of the functions to call whenever refresh_settings() is called
@@ -16,6 +17,9 @@ def change_state_of_all_widgets(root, state): # states: tk.ENABLED, tk.DISABLED,
     for child in root.winfo_children():
         change_state_of_all_widgets(child, state)
 
+def rgb_to_hex(rgb):
+    r, g, b = (int(i) for i in rgb) # convert from floats to ints
+    return "#%02x%02x%02x" % (r,g,b)
 
 def main():
     # hidpi support on windows
@@ -49,11 +53,17 @@ class View(ttk.Frame):
         # reload preview images whenever view.refresh is called
         observers_to_refresh.append(lambda: self.preview_image(0))
 
-    def get_selected_filter_index_from_available(self):
+    def get_selected_available_filter_index(self):
         return self.settings.available.selected_filter_from_available.get()
 
-    def get_selected_filter_index_from_active(self):
+    def get_selected_active_filter_index(self):
         return self.settings.active.selected_filter_from_active.get()
+
+    def get_selected_active_filter(self):
+        if len(controller.active_filters) > 0:
+            return controller.active_filters[self.get_selected_active_filter_index()]
+        else:
+            return None
 
     def preview_image(self, index):
         if index < len(controller.image_filenames):
@@ -91,6 +101,7 @@ class View(ttk.Frame):
 class SaveLoadAndPreviews(ttk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+        self.parent = parent
         ttk.Label(self, text="Preview").grid(row=0, column=0, sticky=tk.W)
 
         ttk.Label(self, text="Images   ").grid(row=1, column=0, sticky=tk.W)
@@ -123,30 +134,27 @@ class SaveLoadAndPreviews(ttk.Frame):
         button_choose_save_location = ttk.Button(self, text="Choose Save Location", command=controller.on_button_pressed_choose_save_location)
         button_choose_save_location.grid(row=3, column=3, sticky=tk.W)
 
-class Previews(ttk.Frame):
-    def __init__(self, parent):
-        ttk.Frame.__init__(self, parent)
-        tabs = ttk.Notebook(self)
-        tabs.pack(expand=1, fill='both')
-        tabs.add(ttk.Frame(tabs), text="Your Images")
-        tabs.add(ttk.Frame(tabs), text="Example Image")
+        ttk.Button(self, text="Refresh Preview", command=lambda: self.parent.preview_image(0)).grid(row=1, column=4, rowspan = 3)
+
 
 class FiltersAndSettings(ttk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
         # ttk.Label(self, text="Filters").grid(row=0, column=0)
         ttk.Label(self, text="Available Filters   ").grid(row=1, column=0, sticky=tk.W)
+        ttk.Label(self, text="<--->").grid(row=1, column=1)
         ttk.Label(self, text="Active Filters   ").grid(row=1, column=2, sticky=tk.W)
         ttk.Label(self, text="Filter Settings   ").grid(row=1, column=3, sticky=tk.W)
         ttk.Label(self, text="Heatmap Adjustments").grid(row=1, column=4, sticky=tk.W)
 
         self.available = AvailableFilters(self)
-        self.available.grid(row=2, column=0)
-        SwapFilters(self).grid(row=2, column=1)
-        self.active = ActiveFilters(self)
-        self.active.grid(row=2, column=2)
-        FilterSettings(self).grid(row=2, column=3)
-        HeatmapAdjustments(self, controller.on_heatmap_adjustments_updated).grid(row=2, column=4)
+        self.available.grid(row=2, column=0, sticky=tk.N)
+        SwapFilters(self).grid(row=2, column=1, sticky=tk.N)
+        fs = FilterSettings(self)
+        fs.grid(row=2, column=3, sticky=tk.N)
+        self.active = ActiveFilters(self, fs)
+        self.active.grid(row=2, column=2, sticky=tk.N)
+        HeatmapAdjustments(self, controller.on_heatmap_adjustments_updated).grid(row=2, column=4, sticky=tk.N)
         RunButton(self).grid(row=3, column=5, sticky=tk.W)
 
 class AvailableFilters(ttk.Frame):
@@ -166,8 +174,9 @@ class SwapFilters(ttk.Frame):
         ttk.Button(self, text="▼", command = controller.on_button_pressed_filter_move_down).pack(fill=tk.X)
 
 class ActiveFilters(ttk.Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, filter_settings_frame):
         tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+        self.filter_settings_frame = filter_settings_frame
         self.selected_filter_from_active = tk.IntVar()
         observers_to_refresh.append(self.refresh)
 
@@ -175,11 +184,56 @@ class ActiveFilters(ttk.Frame):
         for child in self.winfo_children():
             child.destroy()
         for i, filter in enumerate(controller.active_filters):
-            tk.Radiobutton(self, text=filter.name, value=i, variable=self.selected_filter_from_active, indicator = 0, anchor=tk.W).pack(side=tk.TOP, fill=tk.X)
+            tk.Radiobutton(self, text=filter.name, value=i, variable=self.selected_filter_from_active, indicator = 0, command=lambda: self.filter_settings_frame.populate(self.selected_filter_from_active.get()), anchor=tk.W).pack(side=tk.TOP, fill=tk.X)
+            # tk.Radiobutton(self, text=i, value=i, variable=self.selected_filter_from_active, indicator = 0, command=lambda: print(self.selected_filter_from_active.get()), anchor=tk.W).pack(side=tk.TOP, fill=tk.X)
 
 class FilterSettings(ttk.Frame):
     def __init__(self, parent):
-        tk.Frame.__init__(self, parent, highlightbackground="black", highlightthickness="1p")
+        tk.Frame.__init__(self, parent)#, highlightbackground="black", highlightthickness="1p")
+
+    def populate(self, filter_id):
+        if filter_id >= len(controller.active_filters):
+            return
+
+        filter = controller.active_filters[filter_id]
+
+        for child in self.winfo_children():
+            child.destroy()
+
+        for i, name in enumerate(filter.attributes):
+            attr = filter.attributes[name]
+            display = get_attribute_display(self, attr)
+            if display is not None:
+                ttk.Label(self, text=name + " ").grid(row=i, column=0, sticky=tk.E)
+                display.grid(row=i, column=1)
+
+
+def get_attribute_display(parent, attribute):
+    if isinstance(attribute, attr.RGBColorPickerAttribute):
+        return FilterColorPicker(parent, attribute)
+
+class FilterSlider(ttk.Frame):
+    def __init__(self, parent, attribute):
+        pass
+
+class FilterTextEntry(ttk.Frame):
+    def __init__(self, parent, attribute):
+        pass
+
+class FilterColorPicker(ttk.Frame):
+    def __init__(self, parent, attribute):
+        tk.Frame.__init__(self, parent)
+        self.attribute = attribute
+        # ttk.Label(self, text="Color ").pack(side=tk.LEFT)
+        rgb = attribute.value
+        self.preview = tk.Button(self, text="     ", bg=rgb_to_hex(rgb), command=self.set_color)
+        self.preview.pack(side=tk.LEFT)
+        tk.Button(self, text="(Choose)", command=self.set_color).pack()
+
+    def set_color(self):
+        rgb, hex = colorchooser.askcolor()
+        self.preview["bg"] = hex
+        self.attribute.value = rgb
 
 class RunButton(ttk.Frame):
     def __init__(self, parent):

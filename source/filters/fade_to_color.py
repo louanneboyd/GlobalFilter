@@ -6,16 +6,15 @@ class FadeToColor:
 
     name = "Fade To Color"
 
-    attributes = {
-        'color' : Attribute (
-            name = 'Color',
-            default_value = [0, 0, 0],
-            display = ColorPickerDisplay()
-        )
-    }
+    def __init__(self):
+
+        self.attributes = {
+            'Color' :  RGBColorPickerAttribute(),
+        }
 
     def run(self, image, heatmap):
         image = image.astype("float32")
-        color = self.attributes['color'].value
+        r,g,b = self.attributes['Color'].value
+        color = [b,g,r] # ensure that color is in BGR order (not RGB order)
         image = image * heatmap[:,:,None] + (color * (1 - heatmap[:,:,None])) # lerp between `color` on `image`, using heatmap as the interpolation factor
         return image.astype("uint8")
