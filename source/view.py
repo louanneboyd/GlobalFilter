@@ -59,6 +59,10 @@ class View(ttk.Frame):
     def get_selected_active_filter_index(self):
         return self.settings.active.selected_filter_from_active.get()
 
+    def set_selected_active_filter_index(self, index):
+        self.settings.active.selected_filter_from_active.set(index)
+        self.settings.active.filter_settings_frame.populate(index)
+
     def get_selected_active_filter(self):
         if len(controller.active_filters) > 0:
             return controller.active_filters[self.get_selected_active_filter_index()]
@@ -195,10 +199,17 @@ class FilterSettings(ttk.Frame):
         if filter_id >= len(controller.active_filters):
             return
 
+        if len(controller.active_filters) == 0:
+            filter = None
+            return
+
         filter = controller.active_filters[filter_id]
 
         for child in self.winfo_children():
             child.destroy()
+
+        if filter_id < 0:
+            return
 
         for i, name in enumerate(filter.attributes):
             attr = filter.attributes[name]
@@ -210,17 +221,34 @@ class FilterSettings(ttk.Frame):
 
 def get_attribute_display(parent, attribute):
     if isinstance(attribute, attr.RGBColorPickerAttribute):
-        return FilterColorPicker(parent, attribute)
+        return RGBColorPicker(parent, attribute)
+    if (isinstance(attribute, attr.SliderAttribute)):
+        return Slider(parent, attribute)
+    if (isinstance(attribute, attr.TextEntryAttribute)):
+        return TextEntry(parent, attribute)
 
-class FilterSlider(ttk.Frame):
+class Slider(ttk.Frame):
+    def __init__(self, parent, attribute):
+        tk.Frame.__init__(self, parent)
+        entry_value = tk.IntVar()
+        entry_value.set(attribute.value)
+        e = ttk.Entry(self, textvariable=entry_value)
+        e.pack(side=tk.LEFT)
+        tk.Button(self, text="Update", command=lambda:self.update_value(attribute, entry_value)).pack(side=tk.LEFT)
+
+    def update_value(self, attribute, value_from_tk_entry):
+        v = value_from_tk_entry.get()
+        v = min(v, attribute.max)
+        v = max(v, attribute.min)
+        value_from_tk_entry.set(v)
+        attribute.value = v
+        controller.view.refresh()
+
+class TextEntry(ttk.Frame):
     def __init__(self, parent, attribute):
         pass
 
-class FilterTextEntry(ttk.Frame):
-    def __init__(self, parent, attribute):
-        pass
-
-class FilterColorPicker(ttk.Frame):
+class RGBColorPicker(ttk.Frame):
     def __init__(self, parent, attribute):
         tk.Frame.__init__(self, parent)
         self.attribute = attribute
@@ -234,6 +262,7 @@ class FilterColorPicker(ttk.Frame):
         rgb, hex = colorchooser.askcolor()
         self.preview["bg"] = hex
         self.attribute.value = rgb
+        controller.view.refresh()
 
 class RunButton(ttk.Frame):
     def __init__(self, parent):

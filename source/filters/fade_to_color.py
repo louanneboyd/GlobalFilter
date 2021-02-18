@@ -7,7 +7,6 @@ class FadeToColor:
     name = "Fade To Color"
 
     def __init__(self):
-
         self.attributes = {
             'Color' :  RGBColorPickerAttribute(),
         }

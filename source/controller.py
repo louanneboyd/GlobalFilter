@@ -38,20 +38,31 @@ def on_heatmap_adjustments_updated(data):
 def on_button_pressed_filter_add():
     filter = available_filters[view.get_selected_available_filter_index()]
     active_filters.append(filter())
+    view.set_selected_active_filter_index(len(active_filters) - 1) # set the selected filter to the most recent filter added
     view.refresh()
 
 def on_button_pressed_filter_remove():
-    pass
+    del active_filters[view.get_selected_active_filter_index()]
+    view.set_selected_active_filter_index(-1)
+    view.refresh()
 
 def on_button_pressed_filter_remove_all():
     active_filters.clear()
     view.refresh()
 
 def on_button_pressed_filter_move_up():
-    pass
+    old_index = view.get_selected_active_filter_index()
+    index = (old_index - 1) % len(active_filters) # loop back around when you reach the start of the array
+    active_filters.insert(index, active_filters.pop(old_index)) # rearrange the array
+    view.set_selected_active_filter_index(index)
+    view.refresh()
 
 def on_button_pressed_filter_move_down():
-    pass
+    old_index = view.get_selected_active_filter_index()
+    index = (old_index + 1) % len(active_filters) # loop back around when you reach the end of the array
+    active_filters.insert(index, active_filters.pop(old_index)) # rearrange the array
+    view.set_selected_active_filter_index(index)
+    view.refresh()
 
 def on_button_pressed_run():
     print(len(image_filenames))
