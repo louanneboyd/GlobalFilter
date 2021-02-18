@@ -2,13 +2,14 @@ import tkinter as tk
 from tkinter import messagebox, ttk, colorchooser
 import platform
 import cv2
+import numpy as np
 
 import controller
 import model
 from gui import SingleImagePreviewer, TabbedImagePreviewer, ImageSource, HeatmapAdjustments
 from filters.helpers import attributes as attr
 
-blank_image_path = 'gui/blank.bmp'
+blank_image = np.zeros((1,1,3), np.uint8)
 observers_to_refresh = [] # (observer design pattern) a list of the functions to call whenever refresh_settings() is called
 
 def change_state_of_all_widgets(root, state): # states: tk.ENABLED, tk.DISABLED, tk.NORMAL
@@ -115,17 +116,17 @@ class SaveLoadAndPreviews(ttk.Frame):
 
         max_size = "2i" # 2 inches
 
-        self.image_input = SingleImagePreviewer(self, image_source=blank_image_path, source=ImageSource.FILEPATH, max_width=max_size, max_height=max_size)
+        self.image_input = SingleImagePreviewer(self, image_source=blank_image, source=ImageSource.ARRAY, max_width=max_size, max_height=max_size)
         self.image_input.grid(row=2, column=0, sticky=tk.W)
 
         # image_heatmap = TabbedImagePreviewer(self)
-        self.image_heatmap = SingleImagePreviewer(self, image_source=blank_image_path, source=ImageSource.FILEPATH, max_width=max_size, max_height=max_size)
+        self.image_heatmap = SingleImagePreviewer(self, image_source=blank_image, source=ImageSource.ARRAY, max_width=max_size, max_height=max_size)
         self.image_heatmap.grid(row=2, column=1, sticky=tk.W)
 
-        self.image_heatmap_adjusted = SingleImagePreviewer(self, image_source=blank_image_path, source=ImageSource.FILEPATH, max_width=max_size, max_height=max_size)
+        self.image_heatmap_adjusted = SingleImagePreviewer(self, image_source=blank_image, source=ImageSource.ARRAY, max_width=max_size, max_height=max_size)
         self.image_heatmap_adjusted.grid(row=2, column=2, sticky=tk.W)
 
-        self.image_result = SingleImagePreviewer(self, image_source=blank_image_path, source=ImageSource.FILEPATH, max_width=max_size, max_height=max_size)
+        self.image_result = SingleImagePreviewer(self, image_source=blank_image, source=ImageSource.ARRAY, max_width=max_size, max_height=max_size)
         self.image_result.grid(row=2, column=3, sticky=tk.W)
 
 
