@@ -12,7 +12,7 @@ class Luminance:
         self.attributes = {
             'Gray': SliderAttribute(default = 5, min = 0, max = 10, step = 1, clampInput = True)
         }
-    
+
     def floor_ceil(self,image):
         image[image > 255] = 255
         image[image < 0] = 0

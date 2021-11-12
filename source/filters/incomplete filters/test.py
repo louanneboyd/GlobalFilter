@@ -10,11 +10,8 @@ class Luminance:
 
     def __init__(self):
         self.attributes = {
-            'Gray': SliderAttribute(default = 5, min = 0, max = 10, step = 1, clampInput = True),
-            'Thresh': SliderAttribute(default = 5, min = 0, max = 10, step = 1, clampInput = True),
-            'Alpha': SliderAttribute(default = 2, min = -10, max = 10, step = 1, clampInput = True),
-            'Weight': SliderAttribute(default = 5, min = 0, max = 10, step = 1, clampInput = True)
-
+            'Gray': SliderAttribute(default = 0.4, min = 0, max = 1, step = 0.01, clampInput = True),
+            'Thresh': SliderAttribute(default = 5, min = 0, max = 10, step = 1, clampInput = True)
         }
     def floor_ceil(self,image):
         image[image > 255] = 255
@@ -22,19 +19,15 @@ class Luminance:
         return image
 
     def run(self, image, heatmap):
+
+
+        mask = np.zeros(heatmap.shape, dtype="uint8")
+        mask[heatmap.astype("float32") < self.attributes['Thresh'].value/10] = 1
+
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV).astype("float32") # convert image to HSV colorspace. use float32 for more precision
-        #hsv[:,:,2] *= heatmap*self.attributes['Luminance'].value # multiply saturation by heatmap
-        #print(heatmap.shape)
-        #create heatmap with alpha
-        #hsv_hm = cv2.cvtColor(heatmap, cv2.COLOR_BGR2HSV).astype("float32")
-        #return (hsv * (heatmap[:,:,None]*10)).astype("uint8")
-        #print(hsv_hm.shape)
 
         h_channel, s_channel, v_channel = cv2.split(hsv)
-        print(h_channel.max())
-        heatmap = heatmap.astype("float32")
-        print(heatmap.max())
-        v_channel -= (heatmap.max() - heatmap)*255*self.attributes['Gray'].value/10
+        v_channel = (heatmap.max() - heatmap)*255*self.attributes['Gray'].value/10
         v_channel = self.floor_ceil(v_channel)
 
 
@@ -45,9 +38,6 @@ class Luminance:
         return image
         print(type(heatmap))
         print(type(image))
-
-        mask = np.zeros(heatmap.shape, dtype="uint8")
-        mask[heatmap.astype("float32") > self.attributes['Thresh'].value/10] = 255
 
         gray = np.ones(heatmap.shape, dtype="float32")*self.attributes['Gray'].value*10
 
