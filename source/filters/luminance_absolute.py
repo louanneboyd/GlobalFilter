@@ -37,6 +37,7 @@ class LuminanceAbsolute:
 
         return image_new.astype("uint8")
         '''
+        # devnote: modify this to either darken background or lighten foreground
         if ratio >= 1:
             print("Image already dark enough")
             pass
