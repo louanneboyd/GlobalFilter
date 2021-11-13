@@ -6,7 +6,7 @@ import concurrent.futures
 
 class Luminance:
 
-    name = "Luminance"
+    name = "Relative Luminance"
 
     def __init__(self):
         self.attributes = {

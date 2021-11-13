@@ -10,7 +10,7 @@ class LuminanceAbsolute:
 
     def __init__(self):
         self.attributes = {
-            'Max Brightness': SliderAttribute(default = 4, min = 0, max = 10, step = 1, clampInput = True),
+            'Max Brightness': SliderAttribute(default = 4, min = 0, max = 20, step = 1, clampInput = True),
             'Thresh': SliderAttribute(default = 5, min = 0, max = 10, step = 1, clampInput = True)
         }
 
@@ -27,7 +27,7 @@ class LuminanceAbsolute:
         cols, rows = image_bg_only.shape
 
         brightness = np.sum(image_bg_only) / (255 * cols * rows)
-        minimum_brightness = 1.0*self.attributes['Max Brightness'].value/10
+        minimum_brightness = 1.0*self.attributes['Max Brightness'].value/20
 
         ratio = brightness / minimum_brightness
         adj_image_bg = cv2.convertScaleAbs(image_bg, alpha = 1, beta = 255 * (minimum_brightness - brightness))
